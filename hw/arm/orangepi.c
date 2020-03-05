@@ -46,12 +46,6 @@ static void orangepi_init(MachineState *machine)
         exit(1);
     }
 
-    /* This board has fixed size RAM */
-    if (machine->ram_size != 1 * GiB) {
-        error_report("This machine can only be used with 1GiB of RAM");
-        exit(1);
-    }
-
     /* Only allow Cortex-A7 for this board */
     if (strcmp(machine->cpu_type, ARM_CPU_TYPE_NAME("cortex-a7")) != 0) {
         error_report("This board can only be used with cortex-a7 CPU");
@@ -113,10 +107,33 @@ static void orangepi_init(MachineState *machine)
     arm_load_kernel(ARM_CPU(first_cpu), machine, &orangepi_binfo);
 }
 
-static void orangepi_machine_init(MachineClass *mc)
+static void orangepi_pc_init(MachineState *machine)
+{
+    /* This board has fixed size RAM */
+    if (machine->ram_size != 1 * GiB) {
+        error_report("This machine can only be used with 1GiB of RAM");
+        exit(1);
+    }
+
+    orangepi_init(machine);
+}
+
+static void orangepi_zero_init(MachineState *machine)
+{
+    /* This board supports 256 and 512 MiB RAM */
+    if (machine->ram_size != 256 * MiB &&
+        machine->ram_size != 512 * MiB) {
+        error_report("This machine can only be used with 256MiB or 512MiB RAM");
+        exit(1);
+    }
+
+    orangepi_init(machine);
+}
+
+static void orangepi_pc_machine_init(MachineClass *mc)
 {
     mc->desc = "Orange Pi PC";
-    mc->init = orangepi_init;
+    mc->init = orangepi_pc_init;
     mc->block_default_type = IF_SD;
     mc->units_per_default_bus = 1;
     mc->min_cpus = AW_H3_NUM_CPUS;
@@ -127,4 +144,19 @@ static void orangepi_machine_init(MachineClass *mc)
     mc->default_ram_id = "orangepi.ram";
 }
 
-DEFINE_MACHINE("orangepi-pc", orangepi_machine_init)
+static void orangepi_zero_machine_init(MachineClass *mc)
+{
+    mc->desc = "Orange Pi Zero";
+    mc->init = orangepi_zero_init;
+    mc->block_default_type = IF_SD;
+    mc->units_per_default_bus = 1;
+    mc->min_cpus = AW_H3_NUM_CPUS;
+    mc->max_cpus = AW_H3_NUM_CPUS;
+    mc->default_cpus = AW_H3_NUM_CPUS;
+    mc->default_cpu_type = ARM_CPU_TYPE_NAME("cortex-a7");
+    mc->default_ram_size = 256 * MiB;
+    mc->default_ram_id = "orangepi.ram";
+}
+
+DEFINE_MACHINE("orangepi-pc", orangepi_pc_machine_init)
+DEFINE_MACHINE("orangepi-zero", orangepi_zero_machine_init)
